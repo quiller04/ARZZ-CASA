@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer');
-const loginInfo = require('./login'); // Importando informações sigilosas
+const loginInfo = require('./login');
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
