@@ -1,0 +1,15 @@
+para localizar o local:
+
+        cd "G:\Automação\Automação chamados"
+
+para instalar o chrome
+
+        npx puppeteer browsers install chrome
+
+para instalar o puppeteer
+
+        npm install puppeteer
+
+para executar:
+
+        node login.js
