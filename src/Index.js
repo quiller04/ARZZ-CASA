@@ -50,29 +50,26 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     console.log(`Frase específica encontrada. Nome completo do usuário: ${fullName}, CCID: ${ccid}`);
 
     await loginPage.bringToFront();
-await loginPage.goto('https://360.nddprint.com/users');
-await loginPage.waitForSelector('.ndd-ng-grid-filter__input', { visible: true });
-await loginPage.type('.ndd-ng-grid-filter__input', fullName);
-await loginPage.keyboard.press('Enter');
+    await loginPage.goto('https://360.nddprint.com/users');
+    await loginPage.waitForSelector('.ndd-ng-grid-filter__input', { visible: true });
+    await loginPage.type('.ndd-ng-grid-filter__input', fullName);
+    await loginPage.keyboard.press('Enter');
 
-// Função para comparar se o texto do título do span contém o fullName
-const compareNames = (selector, fullName) => {
-    const element = document.querySelector(selector);
-    if (element) {
-        const spanText = element.getAttribute('title');
-        return spanText.trim().toLowerCase() === fullName.toLowerCase();
-    }
-    return false;
-};
+    // Função para comparar se o texto do título do contém o mesmo nome do fullName
+    const compareNames = (selector, fullName) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            const spanText = element.getAttribute('title');
+            return spanText.trim().toLowerCase() === fullName.toLowerCase();
+        }
+        return false;
+    };
 
-// Espera até que o fullName seja encontrado no título do span
-await loginPage.waitForFunction(compareNames, {}, '.ndd-ng-grid__column--preserve-white-space', fullName);
-
-// Agora que o fullName está no título do span, procede com a ação
-await loginPage.waitForSelector('.ndd-ng-grid__column__link', { visible: true });
-await loginPage.evaluate(() => {
-    document.querySelector('.ndd-ng-grid__column__link').click();
-});
+    await loginPage.waitForFunction(compareNames, {}, '.ndd-ng-grid__column--preserve-white-space', fullName);
+    await loginPage.waitForSelector('.ndd-ng-grid__column__link', { visible: true });
+    await loginPage.evaluate(() => {
+        document.querySelector('.ndd-ng-grid__column__link').click();
+    });
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     await loginPage.evaluate(() => {
