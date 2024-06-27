@@ -11,7 +11,7 @@ const checkForSpecificPhrase = async (page) => {
     const input = document.querySelector('#nmtitulochamado');
     return input ? input.value.trim() : null;
   });
-  return inputText === 'Solicitar PIN de Impressão';
+  return inputText === 'Solicitar PIN de Impressão','REALIZAR SOLICITAÇÃO SOLICITAR PIN DE IMPRESSÃO';
 };
 
 const getFullNameAndCCID = async (page) => {
@@ -19,15 +19,28 @@ const getFullNameAndCCID = async (page) => {
     const textarea = document.querySelector('#dschamado');
     const content = textarea ? textarea.textContent.trim() : '';
     const fullNameMatch = content.match(/\(TI\) Nome Completo do Usuário :\s*-\s*(.*)/);
+    
     const ccidInput = document.querySelector('#vlinformacaoadicional1240');
     const ccid = ccidInput ? ccidInput.value.trim() : null;
+
+    //procura o nome completo no metodo novo de chamado do qualitor
+    const fullNameInput = document.querySelector('#vlinformacaoadicional1226');
+    const fullNameFromInput = fullNameInput ? fullNameInput.value.trim() : null;
+    
+    let fullName = fullNameMatch ? fullNameMatch[1].trim() : null;
+
+    if (fullNameFromInput) {
+      fullName = fullNameFromInput;
+    }
+
     return {
-      fullName: fullNameMatch ? fullNameMatch[1].trim() : null,
+      fullName: fullName,
       ccid: ccid
     };
   });
   return result;
 };
+
 
 const checkLoginQualitor = async (page) => {
   const buttonExists = await page.evaluate(() => {

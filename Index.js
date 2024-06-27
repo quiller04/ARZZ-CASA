@@ -13,7 +13,7 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
   const loginPage = await browser.newPage();
   await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
 
-  let currentNumber = 545015;
+  let currentNumber = 604002;
   let lastVisitedURL = '';
 
   while (true) {
