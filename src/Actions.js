@@ -11,7 +11,7 @@ const checkForSpecificPhrase = async (page) => {
     const input = document.querySelector('#nmtitulochamado');
     return input ? input.value.trim() : null;
   });
-  return inputText === 'Solicitar PIN de Impressão','REALIZAR SOLICITAÇÃO SOLICITAR PIN DE IMPRESSÃO';
+  return inputText === 'Solicitar PIN de Impressão' || inputText === 'REALIZAR SOLICITAÇÃO SOLICITAR PIN DE IMPRESSÃO';
 };
 
 const getFullNameAndCCID = async (page) => {

@@ -1,6 +1,6 @@
 para localizar o local:
 
-        cd "G:\Automação\Automação chamados"
+        cd \Automação\ARZZ-Casa\src
 
 para instalar o chrome
 
@@ -12,4 +12,4 @@ para instalar o puppeteer
 
 para executar:
 
-        node login.js
+        node Index.js
