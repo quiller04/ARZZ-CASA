@@ -51,9 +51,19 @@ const checkLoginQualitor = async (page) => {
   return buttonExists;
 };
 
+const checkLoginNdd = async (page) => {
+  const buttonExists = await page.evaluate(() => {
+    const button = document.querySelector('button[name="login-button-submit"][id="login-button-submit"]');
+    return button !== null;
+  });
+
+  return buttonExists;
+};
+
 module.exports = {
   checkPermissionDenied,
   checkForSpecificPhrase,
   getFullNameAndCCID,
-  checkLoginQualitor
+  checkLoginQualitor,
+  checkLoginNdd
 };

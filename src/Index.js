@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const loginInfo = require('./login');
 const loginQualitor = require('./LoginQualitor');
 const LoginNdd = require('./LoginNdd');
-const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFullNameAndCCID } = require('./Actions');
+const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFullNameAndCCID, checkLoginNdd } = require('./Actions');
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
@@ -13,20 +13,27 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
   const loginPage = await browser.newPage();
   await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
 
-  let currentNumber = 604005;
+  let currentNumber = 607665;
   let lastVisitedURL = '';
 
   while (true) {
     await page.bringToFront();
-    const nextURL = `https://casahml.arezzo.com.br/html/hd/hdchamado/cadastro_chamado.php?cdchamado=${currentNumber}`;
+    const nextURL = `https://casa.arezzo.com.br/html/hd/hdchamado/cadastro_chamado.php?cdchamado=${currentNumber}`;
     console.log(`Navegando para a URL: ${nextURL}`);
 
     await page.goto(nextURL);
 
     const tempoexcedido = await checkLoginQualitor(page);
     if (tempoexcedido) {
-      console.log('Tempo de login excedido. Realizando login novamente...');
+      console.log('Tempo de login do qualitor excedido . Realizando login novamente...');
       await loginQualitor(page, loginInfo.arezzo.username, loginInfo.arezzo.password);
+      continue;
+    }
+
+    const tempoexcedidoNdd = await checkLoginQualitor(page);
+    if (tempoexcedidoNdd) {
+      console.log('Tempo de login do ndd excedido. Realizando login novamente...');
+      await LoginNdd(page, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
       continue;
     }
 
@@ -49,6 +56,13 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     const { fullName, ccid } = await getFullNameAndCCID(page);
     console.log(`Frase específica encontrada. Nome completo do usuário: ${fullName}, CCID: ${ccid}`);
 
+    await page.bringToFront();
+    await page.click('#XMLTababa_atendimento');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await page.waitForSelector('#btnStart', { visible: true });
+    await page.click('#btnStart');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     await loginPage.bringToFront();
     await loginPage.goto('https://360.nddprint.com/users');
     await loginPage.waitForSelector('.ndd-ng-grid-filter__input', { visible: true });
@@ -70,8 +84,9 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     await loginPage.evaluate(() => {
         document.querySelector('.ndd-ng-grid__column__link').click();
     });
+    
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     await loginPage.evaluate(() => {
       const element = document.querySelector('.ndd-ng-tab#ndd-ng-tab-user-account a.ndd-ng-tab__link');
       if (element) {
@@ -195,7 +210,7 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
       await loginPage.keyboard.press('Tab');
       await loginPage.keyboard.type('5');
       await loginPage.keyboard.press('Enter');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await loginPage.reload();
       await loginPage.waitForSelector('.ndd-ng-data-item__value', { visible: true });
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -212,9 +227,6 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     }
 
     await page.bringToFront();
-    await page.click('#XMLTababa_atendimento');
-    await page.waitForSelector('#btnStart', { visible: true });
-    await page.click('#btnStart');
     await new Promise(resolve => setTimeout(resolve, 1000));
     await page.waitForSelector('#dsacompanhamento', { visible: true });
     await page.type('#dsacompanhamento', 'PIN encaminhado para o e-mail cadastrado, por favor esperar aproximadamente 30 minutos para replicar em nosso sistema');

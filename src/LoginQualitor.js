@@ -1,6 +1,6 @@
 const loginQualitor = async (page, username, password) => {
     console.log('Acessando a página de login...');
-    await page.goto('https://casahml.arezzo.com.br/login.php');
+    await page.goto('https://casa.arezzo.com.br/login.php?cdlingua=');
   
     console.log('Esperando o campo de usuário ficar visível...');
     await page.waitForSelector('#cdusuario', { visible: true });
