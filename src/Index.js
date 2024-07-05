@@ -13,7 +13,8 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
   const loginPage = await browser.newPage();
   await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
 
-  let currentNumber = 607665;
+  //defini por qual numero de chamado ele começa a pesquisar
+  let currentNumber = 607765;
   let lastVisitedURL = '';
 
   while (true) {
@@ -23,17 +24,19 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
 
     await page.goto(nextURL);
 
-    const tempoexcedido = await checkLoginQualitor(page);
-    if (tempoexcedido) {
+    //verifica se tem que fazer login no qualitor novamente
+    const tempoexcedidoqualitor = await checkLoginQualitor(page);
+    if (tempoexcedidoqualitor) {
       console.log('Tempo de login do qualitor excedido . Realizando login novamente...');
       await loginQualitor(page, loginInfo.arezzo.username, loginInfo.arezzo.password);
       continue;
     }
 
-    const tempoexcedidoNdd = await checkLoginQualitor(page);
+    // Verifica se precisa fazer login no NDD novamente
+    const tempoexcedidoNdd = await checkLoginNdd(loginPage);
     if (tempoexcedidoNdd) {
-      console.log('Tempo de login do ndd excedido. Realizando login novamente...');
-      await LoginNdd(page, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
+      console.log('Tempo de login do NDD excedido. Realizando login novamente...');
+      await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
       continue;
     }
 
@@ -61,10 +64,21 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     await new Promise(resolve => setTimeout(resolve, 1000));
     await page.waitForSelector('#btnStart', { visible: true });
     await page.click('#btnStart');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 4000));
 
     await loginPage.bringToFront();
     await loginPage.goto('https://360.nddprint.com/users');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Verifica se precisa fazer login no NDD novamente
+    const tempoexcedidoNdd1 = await checkLoginNdd(loginPage);
+    if (tempoexcedidoNdd1) {
+      console.log('Tempo de login do NDD excedido. Realizando login novamente...');
+      await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
+      continue;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await loginPage.waitForSelector('.ndd-ng-grid-filter__input', { visible: true });
     await loginPage.type('.ndd-ng-grid-filter__input', fullName);
     await loginPage.keyboard.press('Enter');
@@ -227,6 +241,16 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     }
 
     await page.bringToFront();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    //verifica se tem que fazer login no qualitor novamente
+    const tempoexcedidoqualitor1 = await checkLoginQualitor(page);
+    if (tempoexcedidoqualitor1) {
+      console.log('Tempo de login do qualitor excedido . Realizando login novamente...');
+      await loginQualitor(page, loginInfo.arezzo.username, loginInfo.arezzo.password);
+      continue;
+    }
+
     await new Promise(resolve => setTimeout(resolve, 1000));
     await page.waitForSelector('#dsacompanhamento', { visible: true });
     await page.type('#dsacompanhamento', 'PIN encaminhado para o e-mail cadastrado, por favor esperar aproximadamente 30 minutos para replicar em nosso sistema');
