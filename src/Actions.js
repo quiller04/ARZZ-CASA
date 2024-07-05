@@ -1,3 +1,4 @@
+//ação para verificar se apareceu o erro de limite de chamados
 const checkPermissionDenied = async (page) => {
   const permissionDeniedMessage = await page.evaluate(() => {
     const div = document.querySelector('div[style="font: bold 10px verdana, arial, sens-serif; background: #F2F2D9; border: 1px solid #DFDF9F; padding: 3px 5px;"]');
@@ -6,6 +7,7 @@ const checkPermissionDenied = async (page) => {
   return permissionDeniedMessage !== null && permissionDeniedMessage.includes('Permissão negada');
 };
 
+//verifica se o titulo do chamado é um dos que estou procurando
 const checkForSpecificPhrase = async (page) => {
   const inputText = await page.evaluate(() => {
     const input = document.querySelector('#nmtitulochamado');
@@ -14,6 +16,7 @@ const checkForSpecificPhrase = async (page) => {
   return inputText === 'Solicitar PIN de Impressão' || inputText === 'REALIZAR SOLICITAÇÃO SOLICITAR PIN DE IMPRESSÃO';
 };
 
+//copia os dados do chamado como nome e cc
 const getFullNameAndCCID = async (page) => {
   const result = await page.evaluate(() => {
     const textarea = document.querySelector('#dschamado');
@@ -41,7 +44,7 @@ const getFullNameAndCCID = async (page) => {
   return result;
 };
 
-
+//campos que verifica se está na pagina de login do qualitor
 const checkLoginQualitor = async (page) => {
   const buttonExists = await page.evaluate(() => {
     const button = document.querySelector('button[name="btnLogin"][id="btnLogin"]');
@@ -51,9 +54,10 @@ const checkLoginQualitor = async (page) => {
   return buttonExists;
 };
 
+//campos que verifica se está na pagina de login do ndd
 const checkLoginNdd = async (page) => {
   const buttonExists = await page.evaluate(() => {
-    const button = document.querySelector('button[name="login-button-submit"][id="login-button-submit"]');
+    const button = document.querySelector('button[name="login-button-submit"][id="login-button-submit"], button[name="login-button-password"][id="login-button-password"]');
     return button !== null;
   });
 
