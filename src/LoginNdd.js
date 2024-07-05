@@ -2,6 +2,13 @@ const LoginNdd = async (page, company, email, password) => {
     console.log('Acessando a página de login do NDD Print...');
     await page.goto('https://360.nddprint.com/login/company');
     await page.waitForSelector('#login-company-input-company', { visible: true });
+
+      console.log('Limpando os campos de login do NDD Print...');
+    await page.evaluate(() => {
+      document.querySelector('#login-company-input-company').value = '';
+      document.querySelector('#login-company-input-logon').value = '';
+      document.querySelector('#login-company-input-password').value = '';
+    });
   
     console.log('Preenchendo os dados de login do NDD Print...');
     await page.type('#login-company-input-company', company);
