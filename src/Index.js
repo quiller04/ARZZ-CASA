@@ -1,8 +1,26 @@
+const fs = require('fs');
 const puppeteer = require('puppeteer');
 const loginInfo = require('./login');
 const loginQualitor = require('./LoginQualitor');
 const LoginNdd = require('./LoginNdd');
 const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFullNameAndCCID, checkLoginNdd } = require('./Actions');
+
+const logFilePath = "C:/Users/gaalencar/AREZZO INDUSTRIA E COMERCIO S.A/IT CORPORATIVO - CB ES SP - Documentos/General/TI - SP/registro automação/Registro.txt";
+let lastVisitedURL = ''; // Definição global de lastVisitedURL
+let loggedMessages = {}; // Definição global de loggedMessages
+
+function logMessage(message, action = '', type = 'generic') {
+  const log = `${new Date().toLocaleString()} - ${action}: ${message}\n`;
+  const logKey = `${action}-${lastVisitedURL}-${message}`; // Usando a URL visitada como parte da chave
+
+  // Verifica se a mensagem já foi registrada para evitar repetições
+  if (!loggedMessages[logKey]) {
+    fs.appendFileSync(logFilePath, log); // Salva no arquivo de log
+    loggedMessages[logKey] = true; // Marca a mensagem como registrada
+
+    console.log(`${action}: ${message}`); // Exibe no terminal
+  }
+}
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
@@ -14,51 +32,82 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
   await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
 
   //defini por qual numero de chamado ele começa a pesquisar
-  let currentNumber = 610508;
-  let lastVisitedURL = '';
+  let currentNumber = 610895;
 
   while (true) {
     await page.bringToFront();
     const nextURL = `https://casa.arezzo.com.br/html/hd/hdchamado/cadastro_chamado.php?cdchamado=${currentNumber}`;
-    console.log(`Navegando para a URL: ${nextURL}`);
+    logMessage(`Navegando para a URL: ${nextURL}`, currentNumber);
 
     await page.goto(nextURL);
+    lastVisitedURL = nextURL; // Atualiza lastVisitedURL para a URL atual
 
     //verifica se tem que fazer login no qualitor novamente
     const tempoexcedidoqualitor = await checkLoginQualitor(page);
     if (tempoexcedidoqualitor) {
-      console.log('Tempo de login do qualitor excedido . Realizando login novamente...');
+      logMessage('Tempo de login do qualitor excedido. Realizando login novamente...');
       await loginQualitor(page, loginInfo.arezzo.username, loginInfo.arezzo.password);
       continue;
     }
 
+    const checkAndPressEnter = async () => {
+      const elementHandle = await page.evaluateHandle(() => {
+        const elements = Array.from(document.querySelectorAll('div[style="height:auto;"]'));
+        return elements.find(el =>
+          el.innerHTML.includes('Este incidente está sendo visualizado pelo(s) seguinte(s) usuário(s):') &&
+          el.innerHTML.includes('Deseja visualizar o incidente?') &&
+          el.querySelector('strong')
+        );
+      });
+
+      if (elementHandle) {
+        await page.keyboard.press('Enter');
+      }
+    };
+
+    const checkAndClick = async () => {
+      const elementHandle = await page.$('.recaptcha-checkbox-checkmark[role="presentation"]');
+      if (elementHandle) {
+        await elementHandle.click();
+        logMessage('Elemento clicado.');
+      } else {
+        logMessage('Elemento não encontrado.');
+      }
+    };
+
     // Verifica se precisa fazer login no NDD novamente
     const tempoexcedidoNdd = await checkLoginNdd(loginPage);
     if (tempoexcedidoNdd) {
-      console.log('Tempo de login do NDD excedido. Realizando login novamente...');
+      logMessage('Tempo de login do NDD excedido. Realizando login novamente...');
+      await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
+      await checkAndClick();
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
       continue;
     }
 
     const isPermissionDenied = await checkPermissionDenied(page);
     if (isPermissionDenied) {
-      console.log('Permissão negada encontrada. Recarregando página...');
+      logMessage('Permissão negada encontrada. Recarregando página...', currentNumber, 'permissionDenied');
       await page.reload();
       continue;
     }
 
     const hasSpecificPhrase = await checkForSpecificPhrase(page);
-    console.log(`Frase específica encontrada: ${hasSpecificPhrase}`);
+    logMessage(`Chamado de pin encontrado: ${hasSpecificPhrase}`);
+
+    await checkAndPressEnter();
 
     if (!hasSpecificPhrase) {
-      console.log('Frase específica não encontrada. Navegando para a próxima URL...');
+      logMessage('Frase específica não encontrada. Navegando para a próxima URL...');
       currentNumber++;
       continue;
     }
 
     const { fullName, ccid } = await getFullNameAndCCID(page);
-    console.log(`Frase específica encontrada. Nome completo do usuário: ${fullName}, CCID: ${ccid}`);
+    logMessage(`Chamado de pin encontrado. Nome completo do usuário: ${fullName}, CCID: ${ccid}`);
 
+    await checkAndPressEnter();
     await page.bringToFront();
     await page.click('#XMLTababa_atendimento');
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -73,11 +122,11 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     // Verifica se precisa fazer login no NDD novamente
     const tempoexcedidoNdd1 = await checkLoginNdd(loginPage);
     if (tempoexcedidoNdd1) {
-      console.log('Tempo de login do NDD excedido. Realizando login novamente...');
+      logMessage('Tempo de login do NDD excedido. Realizando login novamente...');
       await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
       continue;
     }
-    
+
     await new Promise(resolve => setTimeout(resolve, 1000));
     await loginPage.waitForSelector('.ndd-ng-grid-filter__input', { visible: true });
     await loginPage.type('.ndd-ng-grid-filter__input', fullName);
@@ -85,20 +134,19 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
 
     // Função para comparar se o texto do título do contém o mesmo nome do fullName
     const compareNames = (selector, fullName) => {
-        const element = document.querySelector(selector);
-        if (element) {
-            const spanText = element.getAttribute('title');
-            return spanText.trim().toLowerCase() === fullName.toLowerCase();
-        }
-        return false;
+      const element = document.querySelector(selector);
+      if (element) {
+        const spanText = element.getAttribute('title');
+        return spanText.trim().toLowerCase() === fullName.toLowerCase();
+      }
+      return false;
     };
 
     await loginPage.waitForFunction(compareNames, {}, '.ndd-ng-grid__column--preserve-white-space', fullName);
     await loginPage.waitForSelector('.ndd-ng-grid__column__link', { visible: true });
     await loginPage.evaluate(() => {
-        document.querySelector('.ndd-ng-grid__column__link').click();
+      document.querySelector('.ndd-ng-grid__column__link').click();
     });
-    
 
     await new Promise(resolve => setTimeout(resolve, 2000));
     await loginPage.evaluate(() => {
@@ -118,7 +166,7 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     });
 
     if (userWithoutAccount) {
-      console.log('O usuário não pertence a nenhuma conta.');
+      logMessage('O usuário não pertence a nenhuma conta.');
 
       await new Promise(resolve => setTimeout(resolve, 2000));
       await loginPage.evaluate(() => {
@@ -185,9 +233,9 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (existingPin && existingPin.length > 0) {
-      console.log(`PIN existente encontrado: ${existingPin}`);
+      logMessage(`PIN existente encontrado: ${existingPin}`);
     //} else {
-      console.log('Gerando novo PIN...');
+      logMessage('Gerando novo PIN...');
       await loginPage.evaluate(() => {
         const generatePinButton = document.querySelector('#userauth-btn-generateandsend-pin');
         if (generatePinButton) {
@@ -209,7 +257,7 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
       });
 
       if (modalText) {
-        console.log('Modal de atenção encontrado. Simulando Enter.');
+        logMessage('Modal de atenção encontrado. Simulando Enter.');
         await loginPage.keyboard.press('Enter');
         await new Promise(resolve => setTimeout(resolve, 1000));
         await loginPage.evaluate(() => {
@@ -234,9 +282,9 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
       });
 
       if (existingPin && existingPin.length > 0) {
-        console.log(`Novo PIN gerado: ${existingPin}`);
+        logMessage(`Novo PIN gerado: ${existingPin}`);
       } else {
-        console.log('Falha ao gerar novo PIN.');
+        logMessage('Falha ao gerar novo PIN.');
       }
     }
 
@@ -246,7 +294,7 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     //verifica se tem que fazer login no qualitor novamente
     const tempoexcedidoqualitor1 = await checkLoginQualitor(page);
     if (tempoexcedidoqualitor1) {
-      console.log('Tempo de login do qualitor excedido . Realizando login novamente...');
+      logMessage('Tempo de login do qualitor excedido . Realizando login novamente...');
       await loginQualitor(page, loginInfo.arezzo.username, loginInfo.arezzo.password);
       continue;
     }
@@ -258,13 +306,13 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
     await page.keyboard.press('ArrowDown');
     await page.click('#btnClose');
     await new Promise(resolve => setTimeout(resolve, 3000));
-    console.log('PIN encaminhado e chamado encerrado.');
+    logMessage('PIN encaminhado e chamado encerrado.');
 
     lastVisitedURL = nextURL;
 
-    const permissionDenied = await checkPermissionDenied(page); // Corrigido para passar 'page' como argumento
+    const permissionDenied = await checkPermissionDenied(page);
     if (permissionDenied) {
-      console.log(`Permissão negada na URL ${nextURL}. Tentando novamente...`);
+      logMessage(`Permissão negada na URL ${nextURL}. Tentando novamente...`);
       continue;
     }
 
