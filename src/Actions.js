@@ -19,6 +19,10 @@ const checkForSpecificPhrase = async (page) => {
 //copia os dados do chamado como nome e cc
 const getFullNameAndCCID = async (page) => {
   const result = await page.evaluate(() => {
+    const normalizeString = (str) => {
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    };
+
     const textarea = document.querySelector('#dschamado');
     const content = textarea ? textarea.textContent.trim() : '';
     const fullNameMatch = content.match(/\(TI\) Nome Completo do Usuário :\s*-\s*(.*)/);
@@ -26,7 +30,7 @@ const getFullNameAndCCID = async (page) => {
     const ccidInput = document.querySelector('#vlinformacaoadicional1240');
     const ccid = ccidInput ? ccidInput.value.trim() : null;
 
-    //procura o nome completo no metodo novo de chamado do qualitor
+    // Procura o nome completo no método novo de chamado do qualitor
     const fullNameInput = document.querySelector('#vlinformacaoadicional1226');
     const fullNameFromInput = fullNameInput ? fullNameInput.value.trim() : null;
     
@@ -36,6 +40,10 @@ const getFullNameAndCCID = async (page) => {
       fullName = fullNameFromInput;
     }
 
+    if (fullName) {
+      fullName = normalizeString(fullName);
+    }
+
     return {
       fullName: fullName,
       ccid: ccid
@@ -43,6 +51,7 @@ const getFullNameAndCCID = async (page) => {
   });
   return result;
 };
+
 
 //campos que verifica se está na pagina de login do qualitor
 const checkLoginQualitor = async (page) => {
