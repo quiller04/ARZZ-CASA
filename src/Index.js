@@ -14,7 +14,7 @@ const { checkLoginQualitor, checkPermissionDenied, checkForSpecificPhrase, getFu
   await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
 
   //defini por qual numero de chamado ele começa a pesquisar
-  let currentNumber = 607765;
+  let currentNumber = 610508;
   let lastVisitedURL = '';
 
   while (true) {
