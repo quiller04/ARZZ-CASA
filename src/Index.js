@@ -29,10 +29,10 @@ function logMessage(message, action = '', type = 'generic') {
   await loginQualitor(page, loginInfo.arezzo.username, loginInfo.arezzo.password);
 
   const loginPage = await browser.newPage();
-  await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
+  //await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
 
   //defini por qual numero de chamado ele começa a pesquisar
-  let currentNumber = 610895;
+  let currentNumber = 611984;
 
   while (true) {
     await page.bringToFront();
@@ -75,16 +75,6 @@ function logMessage(message, action = '', type = 'generic') {
       }
     };
 
-    // Verifica se precisa fazer login no NDD novamente
-    const tempoexcedidoNdd = await checkLoginNdd(loginPage);
-    if (tempoexcedidoNdd) {
-      logMessage('Tempo de login do NDD excedido. Realizando login novamente...');
-      await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
-      await checkAndClick();
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
-      continue;
-    }
 
     const isPermissionDenied = await checkPermissionDenied(page);
     if (isPermissionDenied) {
@@ -117,16 +107,11 @@ function logMessage(message, action = '', type = 'generic') {
 
     await loginPage.bringToFront();
     await loginPage.goto('https://360.nddprint.com/users');
+    await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Verifica se precisa fazer login no NDD novamente
-    const tempoexcedidoNdd1 = await checkLoginNdd(loginPage);
-    if (tempoexcedidoNdd1) {
-      logMessage('Tempo de login do NDD excedido. Realizando login novamente...');
-      await LoginNdd(loginPage, loginInfo.nddPrint.company, loginInfo.nddPrint.email, loginInfo.nddPrint.password);
-      continue;
-    }
-
+    
+    await loginPage.goto('https://360.nddprint.com/users');
     await new Promise(resolve => setTimeout(resolve, 1000));
     await loginPage.waitForSelector('.ndd-ng-grid-filter__input', { visible: true });
     await loginPage.type('.ndd-ng-grid-filter__input', fullName);
@@ -261,10 +246,8 @@ function logMessage(message, action = '', type = 'generic') {
         await loginPage.keyboard.press('Enter');
         await new Promise(resolve => setTimeout(resolve, 1000));
         await loginPage.evaluate(() => {
-          const generatePinButton = document.querySelector('#userauth-btn-generateandsend-pin');
-          if (generatePinButton) {
-            generatePinButton.click();
-          }
+        const generatePinButton = document.querySelector('#userauth-btn-generateandsend-pin');
+        generatePinButton.click();
         });
       }
 
@@ -287,6 +270,31 @@ function logMessage(message, action = '', type = 'generic') {
         logMessage('Falha ao gerar novo PIN.');
       }
     }
+    
+    // Clique no campo "Meus Dados"
+    await loginPage.waitForSelector('div#layout-navbar-menu', { visible: true });
+    await loginPage.click('div#layout-navbar-menu');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Clique no botão "Sair" se estiver visível
+    const logoutButtonSelector = 'button#ndd-ng-offsidebar-logout';
+    const isLogoutButtonVisible = await loginPage.evaluate((selector) => {
+      const element = document.querySelector(selector);
+      return element ? element.offsetParent !== null : false;
+    }, logoutButtonSelector);
+
+    if (isLogoutButtonVisible) {
+      await loginPage.click(logoutButtonSelector);
+      logMessage('Botão "Sair" clicado com sucesso.');
+    } else {
+      logMessage('Botão "Sair" não está visível.');
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Navegar para uma URL vazia
+    await loginPage.goto('about:blank');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+
 
     await page.bringToFront();
     await new Promise(resolve => setTimeout(resolve, 1000));
